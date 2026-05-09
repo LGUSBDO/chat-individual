@@ -1,0 +1,358 @@
+index.html
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Global Chat</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #0F172A;
+            color: #F8FAFC;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 700px;
+            background: #1E293B;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #94A3B8;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: #0F172A;
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: #3B82F6;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #8B5CF6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .profile-info {
+            line-height: 2;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .chat-box {
+            background: #0F172A;
+            border-radius: 10px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+        }
+
+        .success {
+            color: #22C55E;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: #EF4444;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- LOGIN -->
+    <div id="loginScreen">
+        <h1>SOCIAL GLOBAL CHAT</h1>
+
+        <div class="input-group">
+            <label>Nome de usuário</label>
+            <input type="text" id="loginUsername">
+        </div>
+
+        <div class="input-group">
+            <label>Senha</label>
+            <input type="password" id="loginPassword">
+        </div>
+
+        <button onclick="login()">Entrar</button>
+        <button onclick="showRegister()">Criar Conta</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerScreen" class="hidden">
+        <h2>CRIAR CONTA</h2>
+
+        <div class="input-group">
+            <label>Nome de usuário</label>
+            <input type="text" id="registerUsername">
+        </div>
+
+        <div class="input-group">
+            <label>Senha</label>
+            <input type="password" id="registerPassword">
+        </div>
+
+        <div class="input-group">
+            <label>Biografia</label>
+            <input type="text" id="registerBio">
+        </div>
+
+        <div class="input-group">
+            <label>Status</label>
+            <input type="text" id="registerStatus">
+        </div>
+
+        <button onclick="register()">Criar Conta</button>
+        <button onclick="showLogin()">Voltar</button>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="profileScreen" class="hidden">
+        <h2>MEU PERFIL</h2>
+
+        <div class="profile-info" id="profileInfo"></div>
+
+        <button onclick="gainXP()">Ganhar XP</button>
+        <button onclick="showChat()">Chat Global</button>
+        <button onclick="logout()">Sair</button>
+    </div>
+
+    <!-- CHAT -->
+    <div id="chatScreen" class="hidden">
+        <h2>CHAT GLOBAL</h2>
+
+        <div class="chat-box" id="chatBox"></div>
+
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
+        </div>
+
+        <button onclick="sendMessage()">Enviar</button>
+        <button onclick="showProfile()">Voltar ao Perfil</button>
+    </div>
+
+</div>
+
+<script>
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+    let chatMessages = JSON.parse(localStorage.getItem("chatMessages")) || [];
+    let currentUser = null;
+
+    function hideAll() {
+        document.getElementById("loginScreen").classList.add("hidden");
+        document.getElementById("registerScreen").classList.add("hidden");
+        document.getElementById("profileScreen").classList.add("hidden");
+        document.getElementById("chatScreen").classList.add("hidden");
+    }
+
+    function showLogin() {
+        hideAll();
+        document.getElementById("loginScreen").classList.remove("hidden");
+    }
+
+    function showRegister() {
+        hideAll();
+        document.getElementById("registerScreen").classList.remove("hidden");
+    }
+
+    function showProfile() {
+        hideAll();
+        document.getElementById("profileScreen").classList.remove("hidden");
+        updateProfile();
+    }
+
+    function showChat() {
+        hideAll();
+        document.getElementById("chatScreen").classList.remove("hidden");
+        refreshChat();
+    }
+
+    function register() {
+        const username = document.getElementById("registerUsername").value.trim();
+        const password = document.getElementById("registerPassword").value.trim();
+        const bio = document.getElementById("registerBio").value.trim();
+        const status = document.getElementById("registerStatus").value.trim();
+
+        if (!username || !password) {
+            alert("Preencha usuário e senha.");
+            return;
+        }
+
+        const exists = users.find(user => user.username === username);
+
+        if (exists) {
+            alert("Esse usuário já existe.");
+            return;
+        }
+
+        const newUser = {
+            username,
+            password,
+            bio,
+            status,
+            xp: 0,
+            level: 1,
+            createdAt: new Date().toLocaleString()
+        };
+
+        users.push(newUser);
+        localStorage.setItem("users", JSON.stringify(users));
+
+        alert("Conta criada com sucesso!");
+        showLogin();
+    }
+
+    function login() {
+        const username = document.getElementById("loginUsername").value.trim();
+        const password = document.getElementById("loginPassword").value.trim();
+
+        const user = users.find(
+            u => u.username === username && u.password === password
+        );
+
+        if (!user) {
+            alert("Usuário ou senha incorretos.");
+            return;
+        }
+
+        currentUser = user;
+        alert(`Bem-vindo, ${username}!`);
+        showProfile();
+    }
+
+    function updateProfile() {
+        document.getElementById("profileInfo").innerHTML = `
+            <p><strong>Usuário:</strong> ${currentUser.username}</p>
+            <p><strong>Bio:</strong> ${currentUser.bio}</p>
+            <p><strong>Status:</strong> ${currentUser.status}</p>
+            <p><strong>XP:</strong> ${currentUser.xp}</p>
+            <p><strong>Nível:</strong> ${currentUser.level}</p>
+            <p><strong>Criado em:</strong> ${currentUser.createdAt}</p>
+        `;
+    }
+
+    function gainXP() {
+        currentUser.xp += 50;
+
+        if (currentUser.xp >= currentUser.level * 100) {
+            currentUser.level += 1;
+        }
+
+        users = users.map(user =>
+            user.username === currentUser.username ? currentUser : user
+        );
+
+        localStorage.setItem("users", JSON.stringify(users));
+
+        alert("Você ganhou 50 XP!");
+        updateProfile();
+    }
+
+    function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const text = input.value.trim();
+
+        if (!text) return;
+
+        const now = new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const fullMessage = `[${now}] ${currentUser.username}: ${text}`;
+
+        chatMessages.push(fullMessage);
+        localStorage.setItem("chatMessages", JSON.stringify(chatMessages));
+
+        input.value = "";
+        refreshChat();
+    }
+
+    function refreshChat() {
+        const chatBox = document.getElementById("chatBox");
+        chatBox.innerHTML = "";
+
+        chatMessages.forEach(msg => {
+            const div = document.createElement("div");
+            div.classList.add("chat-message");
+            div.textContent = msg;
+            chatBox.appendChild(div);
+        });
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function logout() {
+        currentUser = null;
+        showLogin();
+    }
+
+    showLogin();
+</script>
+
+</body>
+</html>
+```
